@@ -67,3 +67,23 @@ que expõe a importância de cada variável na decisão. Sem explicação, não 
 
 Unidades de perfil semelhante são agrupadas, para que a comparação seja feita
 dentro do grupo e não contra a média do município.
+
+
+---
+
+## 6. Onde isso vive no código
+
+| Etapa | Arquivo | Função |
+|---|---|---|
+| Normalização min-max | `src/indice/pulso.py` | `normalizar` |
+| Verificação de correlação (A1) | `src/indice/pulso.py` | `verificar_correlacao` |
+| Ajuste por contexto | `src/indice/pulso.py` | `ajustar_por_contexto` |
+| Índice e faixas | `src/indice/pulso.py` | `calcular_pulso` |
+| Classificação explicável | `src/modelos/classificador.py` | `treinar`, `importancia_variaveis` |
+| Agrupamento | `src/modelos/clusterizacao.py` | `agrupar`, `descrever_grupos` |
+| Recomendação | `src/recomendacao/motor.py` | `gerar` |
+
+Parâmetros que ainda precisam de validação com a SEAB, todos no topo dos arquivos:
+`PESOS_EIXOS` (hoje 60/20/20, espelhando o Recife Monitora), `AJUSTE_MAXIMO`
+(hoje ±10 pontos), `FAIXAS` do semáforo e os limiares de prioridade do motor
+de recomendação.

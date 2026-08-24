@@ -63,6 +63,16 @@ O `requirements.txt` traz versões travadas: o ambiente fica idêntico ao nosso,
 não apenas parecido. Cada decisão de tratamento está registrada em
 `docs/decisoes_limpeza.md` — nenhum tratamento acontece fora do código versionado.
 
+### ⚠️ Sobre os dados
+
+Enquanto a Secretaria não disponibiliza os eixos de autoavaliação e satisfação, o
+pipeline roda sobre uma **base simulada** de 182 equipes, gerada com semente fixa
+por `src/dados_sinteticos/gerar.py`. Nenhum número representa o desempenho real da
+rede: a marca `SIMULADO` acompanha o dado da geração até a tela do painel.
+
+Quando o dado real chegar, basta colocá-lo em `data/processed/base_analitica.csv` —
+o pipeline passa a usá-lo sozinho. **É substituição de arquivo, não retrabalho.**
+
 ---
 
 ## Estrutura
@@ -74,6 +84,7 @@ vital-data-lab/
 ├── requirements.txt            dependências com versões travadas
 ├── app.py                      aplicação Streamlit
 ├── src/
+│   ├── dados_sinteticos/       gerador da base simulada (plano B do risco R1)
 │   ├── etl/                    extração, limpeza, anonimização e integração
 │   ├── indice/                 cálculo do Pulso da Unidade
 │   ├── modelos/                classificação e agrupamento
@@ -132,6 +143,12 @@ Responsabilidades detalhadas em [docs/gestao/papeis.md](docs/gestao/papeis.md).
 ---
 
 ## Estado do projeto
+
+**O que já funciona hoje:** o pipeline roda ponta a ponta sobre a base simulada —
+calcula o Pulso da Unidade, classifica nas três faixas com Random Forest
+(acurácia média de 0,87 em validação cruzada estratificada), agrupa unidades
+semelhantes com K-Means e gera recomendações prescritivas comparando cada unidade
+com o seu grupo. O painel Streamlit exibe as três telas.
 
 | Marco | Data | Situação |
 |---|---|---|
