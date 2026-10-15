@@ -1,6 +1,6 @@
 # Vital Data Lab
 
-**Pulso da Unidade — Índice Inteligente de Desempenho para a Atenção Básica do Recife**
+**Tripé de Ação — apoio à decisão para a Atenção Básica do Recife**
 
 Projeto 5 · Gestão de Tecnologia da Informação · CESAR School · 2026.2  
 Desafio: Recife Monitora — SEAB / NIIMA, Secretaria de Saúde do Recife
@@ -13,11 +13,11 @@ Desafio: Recife Monitora — SEAB / NIIMA, Secretaria de Saúde do Recife
 
 ## O que este projeto entrega
 
-Um painel na web que dá uma nota de **0 a 100** para cada Unidade de Saúde da Família do Recife, diz em qual das três faixas ela está — **Crítico, Atenção ou Excelência** — e escreve, em uma linha, o que o gestor daquele território deve fazer primeiro.
+Um painel na web que organiza a pontuação oficial do Recife Monitora, de **0 a 1.000**, para cada equipe de Saúde da Família do Recife, mostra em qual das três faixas de ação ela está — **Crítico (abaixo de 500), Atenção (500 a 749) ou Excelência (750 ou mais)** — e escreve, em uma linha, o que o gestor daquele território deve fazer primeiro.
 
-A nota considera o contexto social do bairro, para que uma unidade em território vulnerável não seja penalizada por atender uma população mais difícil.
+A comparação é justa: cada equipe é comparada apenas com equipes do mesmo grupo, como o próprio Recife Monitora determina, para que uma equipe em território vulnerável não seja penalizada por atender uma população mais difícil.
 
-**O índice existe para direcionar recursos, nunca para punir equipes.**
+**O painel existe para direcionar recursos, nunca para punir equipes.**
 
 ### O que não é
 
@@ -39,7 +39,7 @@ Extract → Transform → Integrate → Load
 Base analítica
       │
       ▼
-PULSO 0–100
+TRIPÉ 0–1.000
       ├──► Classificação
       ├──► Agrupamento
       └──► Recomendação
@@ -116,7 +116,7 @@ Executa as rotinas de preparação e validação dos dados, incluindo:
 - tratamento de inconsistências;
 - tratamento de valores fora dos domínios esperados;
 - validação de integridade referencial;
-- aplicação das regras de qualidade definidas para as bases.
+- aplicação das regras do programa: Bloco A só pontua com 30% ou mais de resposta, e equipe desclassificada fica sem nota (dado ausente), nunca com zero.
 
 ### Integrate
 
@@ -211,42 +211,35 @@ Documenta os problemas de qualidade identificados, as verificações realizadas 
 
 ### 03 — Análise exploratória
 
-Explora os dados tratados, incluindo participação ao longo dos ciclos, comportamento das pontuações e eixos, diferenças entre distritos, NPS e planos de ação.
+Explora os dados tratados, incluindo participação ao longo dos ciclos, comportamento das pontuações e eixos, diferenças entre distritos, indicadores do Eixo 3 por grupo de equipes, NPS e planos de ação.
 
 ### 04 — Modelagem
 
-Destinado à documentação das etapas relacionadas ao Pulso da Unidade, classificação, agrupamento e demais componentes analíticos do produto.
+Previsto para o SR2: classificação da faixa de ação (Random Forest) e agrupamento de equipes comparáveis (K-Means), sobre a `base_analitica.csv`. Prazo: 23/10/2026. Responsável: Nicolas.
 
 ---
 
-## Pulso da Unidade
+## Tripé de Ação
 
-O Pulso da Unidade é um índice de **0 a 100** criado pelo projeto para sintetizar informações de desempenho e apoiar a priorização da gestão.
+O Vital Data Lab organiza a pontuação oficial do Recife Monitora, de **0 a 1.000 pontos**, nos seus três eixos e coloca as recomendações em primeiro lugar:
 
-Ele **não substitui a pontuação existente do Recife Monitora**. A proposta é acrescentar uma camada de inteligência que permita:
+1. **Ações desta semana:** o que o gestor deve fazer primeiro em cada equipe, com motivo e prazo;
+2. **Três eixos:** autoavaliação (até 200), satisfação do usuário (até 200) e desempenho assistencial (até 600), cada um com status Crítico, Atenção ou Excelência;
+3. **Regras do programa aplicadas:** quórum de 30% no Bloco A, desclassificada tratada como ausente (nunca zero) e Eixo 3 comparado só dentro do mesmo grupo de equipes.
 
-1. considerar o contexto em que a unidade atua;
-2. explicar quais dimensões influenciam sua situação;
-3. identificar pontos de maior atenção;
-4. transformar os resultados em recomendações acionáveis para a gestão.
-
-A metodologia completa está documentada em:
-
-```text
-docs/produto/indice_pulso.md
-```
-
-Parâmetros metodológicos que dependem de validação de domínio devem permanecer identificados na documentação e no código.
+> **Em transição (declarado em 15/10/2026):** o `src/indice/pulso.py` ainda calcula a versão anterior, de 0 a 100. Ele será substituído pelo cálculo dos três eixos na régua oficial até **18/10/2026** (responsável: Nicolas). O app continua no ar durante a troca.
 
 ---
 
 ## Classificação
 
-O produto propõe três faixas de interpretação do Pulso:
+Cada equipe recebe uma faixa de ação na régua oficial:
 
-- **Crítico**
-- **Atenção**
-- **Excelência**
+- **Crítico:** abaixo de 500 pontos
+- **Atenção:** de 500 a 749 pontos
+- **Excelência:** 750 pontos ou mais
+
+Equipes desclassificadas aparecem como **Sem envio**, e não como nota zero. Equipes sem quórum no Bloco A aparecem como **Sem dado suficiente** nesse bloco.
 
 A camada de modelagem busca também fornecer explicabilidade sobre as variáveis relacionadas à classificação.
 
@@ -254,9 +247,9 @@ A camada de modelagem busca também fornecer explicabilidade sobre as variáveis
 
 ## Agrupamento
 
-Unidades com perfis semelhantes podem ser agrupadas para permitir comparações mais adequadas entre contextos próximos.
+O Eixo 3 é comparado apenas entre equipes do mesmo grupo, como o programa determina.
 
-A proposta é evitar que toda unidade seja comparada simplesmente com a média geral, permitindo análises entre unidades com características semelhantes.
+Além disso, equipes com perfis semelhantes podem ser agrupadas para permitir comparações mais adequadas entre contextos próximos, evitando que toda equipe seja comparada simplesmente com a média geral.
 
 ---
 
@@ -298,7 +291,7 @@ vital-data-lab/
 │   │   └── pipeline.py
 │   │
 │   ├── indice/
-│   │   └── pulso.py
+│   │   └── pulso.py          (em transição até 18/10/2026)
 │   │
 │   ├── modelos/
 │   │   ├── classificador.py
@@ -326,7 +319,7 @@ Os documentos mais consultados incluem:
 | o problema do cliente | `docs/imersao/problema.md` |
 | o que se sabe do Recife Monitora | `docs/imersao/pesquisa_publica_recife_monitora.md` |
 | por que essa solução e não outra | `docs/produto/solucao.md` |
-| como o índice é calculado | `docs/produto/indice_pulso.md` |
+| como a pontuação é calculada (em revisão até 18/10/2026) | `docs/produto/indice_pulso.md` |
 | quem faz o quê e até quando | `docs/produto/plano_execucao.md` |
 | a fundamentação acadêmica | `docs/imersao/revisao_literatura.md` |
 | os riscos e planos de contingência | `docs/imersao/riscos.md` |
@@ -336,7 +329,7 @@ Os documentos mais consultados incluem:
 
 ## Privacidade por construção
 
-O projeto trabalha com **dados sintéticos e agregados por equipe/unidade**, sem registros individuais de pacientes.
+O projeto trabalha com **dados sintéticos e agregados por equipe**, sem registros individuais de pacientes ou de profissionais.
 
 Os identificadores necessários ao relacionamento das bases, como `codigo_ine` e `codigo_cnes`, são preservados para permitir a integração correta das informações.
 
@@ -349,12 +342,14 @@ Nenhum dado individual de paciente deve entrar no pipeline ou no repositório.
 | Papel | Quem |
 |---|---|
 | Gestão de Projeto | Aynoã (Naya) Almeida |
-| Engenharia de Dados | Leônidas Carvalho |
+| Liderança Técnica: cálculo, modelos e deploy | Nicolas Soares da Silva Miguel |
 | Análise de Dados | Marcela Santos |
-| Ciência de Dados | Cauã Cabral |
-| Domínio e Conformidade | Danilo Brito |
-| UI/UX Design | Beatriz |
+| UI/UX e Product Owner | Beatriz Amaral |
+| Direção de Arte | Cauã Cabral |
+| Domínio, Conformidade e Processo | Danilo Brito |
 | Desenvolvimento e Qualidade | Pedro Henrique Macêdo |
+
+Leônidas Carvalho (Engenharia de Dados) participou do projeto até setembro de 2026; suas tarefas foram redistribuídas na equipe.
 
 Responsabilidades detalhadas em `docs/gestao/papeis.md`.
 
@@ -368,6 +363,7 @@ O pipeline atualmente:
 
 - carrega as cinco bases fornecidas;
 - executa tratamento e validações;
+- aplica as regras do programa (quórum do Bloco A e desclassificada como ausente);
 - verifica integridade entre as fontes;
 - salva as bases tratadas;
 - constrói a base analítica integrada.
@@ -384,11 +380,15 @@ Os notebooks de:
 
 estão implementados e executáveis do início ao fim.
 
-### Pulso, modelos e recomendação
+### Pendências declaradas
 
-O Pulso da Unidade, a classificação, o agrupamento e o motor de recomendação fazem parte da proposta central do Vital Data Lab.
-
-Esses componentes estão sendo adequados à estrutura das bases atualmente utilizadas no projeto, preservando a proposta metodológica documentada e os parâmetros que ainda dependem de validação de domínio.
+| O que falta | Quando fecha | Responsável |
+|---|---|---|
+| Substituir o cálculo antigo (0 a 100) pelo dos três eixos na régua oficial | 18/10/2026 | Nicolas |
+| Comparação do Eixo 3 por grupo como coluna do pipeline | 18/10/2026 | Marcela |
+| Incluir `matplotlib` e `seaborn` no `requirements.txt` | 18/10/2026 | Pedro |
+| Modelos de classificação e agrupamento, com avaliação | 23/10/2026 | Nicolas |
+| Guia de Reprodutibilidade atualizado para o pipeline novo | 22/10/2026 | Pedro |
 
 ---
 
