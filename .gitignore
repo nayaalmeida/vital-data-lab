@@ -5,8 +5,6 @@ __pycache__/
 *.py[cod]
 
 # dados brutos: pesados e não versionados
-data/raw/*
-!data/raw/.gitkeep
 
 # notebooks: saídas limpas antes do commit
 .ipynb_checkpoints/
