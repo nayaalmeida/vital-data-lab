@@ -14,6 +14,8 @@ scikit-learn==1.5.2
 
 # --- visualização ---
 plotly==5.24.1
+matplotlib==3.9.2
+seaborn==0.13.2
 
 # --- aplicação ---
 streamlit==1.39.0
