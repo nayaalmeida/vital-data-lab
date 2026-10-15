@@ -90,28 +90,3 @@ def integrar(bases):
         validate="one_to_one"
     )
     return base_integrada
-
-def salvar_base_analitica(base_integrada, caminho_saida=None):
-    """
-    Salva a base analítica integrada em data/processed/.
-    """
-
-    if caminho_saida is None:
-        caminho_saida = (
-            Path(__file__).resolve().parents[2]
-            / "data"
-            / "processed"
-            / "base_analitica.csv"
-        )
-
-    caminho_saida.parent.mkdir(
-        parents=True,
-        exist_ok=True
-    )
-
-    base_integrada.to_csv(
-        caminho_saida,
-        index=False
-    )
-
-    return caminho_saida
