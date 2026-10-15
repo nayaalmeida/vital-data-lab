@@ -223,7 +223,7 @@ Previsto para o SR2: classificação da faixa de ação (Random Forest) e agrupa
 
 O Vital Data Lab organiza a pontuação oficial do Recife Monitora, de **0 a 1.000 pontos**, nos seus três eixos e coloca as recomendações em primeiro lugar:
 
-1. **Ações desta semana:** o que o gestor deve fazer primeiro em cada equipe, com motivo e prazo;
+1. **Ações desta semana:** o que o gestor deve fazer primeiro em cada equipe, com o motivo de cada ação;
 2. **Três eixos:** autoavaliação (até 200), satisfação do usuário (até 200) e desempenho assistencial (até 600), cada um com status Crítico, Atenção ou Excelência;
 3. **Regras do programa aplicadas:** quórum de 30% no Bloco A, desclassificada tratada como ausente (nunca zero) e Eixo 3 comparado só dentro do mesmo grupo de equipes.
 
@@ -386,7 +386,6 @@ estão implementados e executáveis do início ao fim.
 |---|---|---|
 | Substituir o cálculo antigo (0 a 100) pelo dos três eixos na régua oficial | 18/10/2026 | Nicolas |
 | Comparação do Eixo 3 por grupo como coluna do pipeline | 18/10/2026 | Marcela |
-| Incluir `matplotlib` e `seaborn` no `requirements.txt` | 18/10/2026 | Pedro |
 | Modelos de classificação e agrupamento, com avaliação | 23/10/2026 | Nicolas |
 | Guia de Reprodutibilidade atualizado para o pipeline novo | 22/10/2026 | Pedro |
 
