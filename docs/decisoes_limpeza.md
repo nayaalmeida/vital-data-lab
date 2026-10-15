@@ -61,6 +61,19 @@ substituir a medição. Valor a validar com a SEAB no Kickoff.
 
 ---
 
+## 15/10/2026 · Limpeza da base comum do SR1
+
+**Encontrado.** A tabela `resultados_ciclos` chegou com 1.392 registros, com repetições de equipe + ciclo; 58 registros sem pontuação nos eixos (equipes desclassificadas) e 230 sem nota no Eixo 2. Valores ausentes também em `equipes` (11), `nps_atributos` (260) e `planos_acao` (10).
+
+**Feito.** Tratamento em código (`src/etl/transform.py`): padronização, remoção de duplicidades (1.392 → 1.363 registros, sem repetição de equipe + ciclo), tratamento de ausentes e outliers e checagem de integridade entre as cinco tabelas. Regras do programa aplicadas: Bloco A só pontua com 30% ou mais de resposta; equipe desclassificada fica sem nota (ausente), nunca com zero.
+
+**Por quê.** Regras do Manual do Recife Monitora. Dar zero a quem não enviou dados confundiria "não avaliada" com "desempenho ruim" e geraria recomendação errada.
+
+**Quem.** Marcela Santos.
+
+**Substitui.** A base simulada de 24/08 (`src/dados_sinteticos/gerar.py`) foi substituída pela base comum disponibilizada pelo professor; o gerador foi removido do repositório em 15/10. O teto do ajuste por contexto (24/08) saiu do escopo em 15/10, com a adoção da régua oficial do Recife Monitora organizada nos três eixos.
+
+---
 ## Modelo a preencher
 
 ```
