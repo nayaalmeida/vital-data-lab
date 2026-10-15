@@ -10,12 +10,10 @@ Fluxo:
 """
 
 from src.etl.extract import carregar_dados
-from src.etl.transform import (
-    executar_tratamento,
+from src.etl.transform import executar_tratamento
+from src.etl.integrate import integrar
+from src.etl.load import (
     salvar_bases_tratadas,
-)
-from src.etl.integrate import (
-    integrar,
     salvar_base_analitica,
 )
 
