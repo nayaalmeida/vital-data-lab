@@ -1,60 +1,58 @@
 """
-Coleta dos dados brutos.
+Carregamento das bases de dados fornecidas para o projeto.
 
-Cada fonte tem sua função. Nenhuma transformação acontece aqui:
-extract apenas baixa e salva em data/raw/ exatamente como veio.
-
-Responsável: Leônidas Carvalho (Engenheiro de Dados)
+Esta etapa realiza apenas a leitura dos arquivos em data/raw/,
+sem aplicar tratamentos ou transformações.
 """
 
 from pathlib import Path
 
+import pandas as pd
+
+
 RAW = Path(__file__).resolve().parents[2] / "data" / "raw"
 
+ARQUIVOS = {
+    "equipes": "equipes.csv",
+    "resultados": "resultados_ciclos.csv",
+    "eixo3": "eixo3_indicadores.csv",
+    "nps": "nps_atributos.csv",
+    "planos": "planos_acao.csv",
+}
 
-def extrair_sisab():
+
+def carregar_dados():
     """
-    Indicadores assistenciais do SISAB / e-SUS APS.
+    Carrega as cinco bases de dados do projeto.
 
-    Acesso: sisab.saude.gov.br — Relatórios > Indicadores de Desempenho.
-    Export manual e paginado; documentar aqui o passo a passo exato usado,
-    para que outra pessoa consiga repetir.
-
-    Saída esperada: data/raw/sisab_<competencia>.csv
+    Retorna
+    -------
+    dict[str, pd.DataFrame]
+        Dicionário contendo um DataFrame para cada base.
     """
-    raise NotImplementedError("Documentar o passo a passo do export antes de automatizar.")
+
+    bases = {}
+
+    for nome, arquivo in ARQUIVOS.items():
+        caminho = RAW / arquivo
+
+        if not caminho.exists():
+            raise FileNotFoundError(f"Arquivo não encontrado: {caminho}")
+
+        dtype = {"codigo_ine": "string"}
+
+        if nome == "equipes":
+            dtype["codigo_cnes"] = "string"
+
+        bases[nome] = pd.read_csv(caminho, dtype=dtype)
+
+    return bases
 
 
-def extrair_cnes():
-    """
-    Cadastro Nacional de Estabelecimentos de Saúde.
+if __name__ == "__main__":
+    bases = carregar_dados()
 
-    Acesso: cnes.datasus.gov.br e FTP DATASUS (arquivos mensais).
-    É a chave de integração de todas as demais bases.
+    print("Bases carregadas com sucesso:\n")
 
-    Saída esperada: data/raw/cnes_<competencia>.csv
-    """
-    raise NotImplementedError
-
-
-def extrair_ibge():
-    """
-    População, IDHM, saneamento e renda por bairro / setor censitário.
-
-    Acesso: API SIDRA do IBGE (JSON).
-    Camada de contexto social que torna a comparação entre unidades justa.
-
-    Saída esperada: data/raw/ibge_<agregado>.json
-    """
-    raise NotImplementedError
-
-
-def extrair_recife_em_dados():
-    """
-    Territorialização dos distritos sanitários e indicadores municipais.
-
-    Acesso: portal de dados abertos da Prefeitura do Recife (CKAN).
-
-    Saída esperada: data/raw/recife_distritos.geojson
-    """
-    raise NotImplementedError
+    for nome, df in bases.items():
+        print(f"{nome}: {df.shape}")
