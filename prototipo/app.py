@@ -1,11 +1,13 @@
 """Pulso da Unidade v2: motor de sugestões de ações sobre os três eixos do Recife Monitora."""
 
+from html import escape
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from pulso import estilo
+from pulso import agente, estilo
 from pulso.dados import DISTRITOS, gerar_base
 from pulso.eixos import ACOES, CICLOS, EIXOS, ITENS, ITENS_DO_EIXO, PROXIMO_CICLO, pontuacoes
 from pulso.estilo import CINZA, CORES_EIXO, TINTA, VERDE, VERMELHO
@@ -42,6 +44,16 @@ def carregar():
 def sugestoes_do_ciclo(ciclo: str) -> pd.DataFrame:
     base, _, _, motor = carregar()
     return sugestoes(motor, base[base["ciclo"] == ciclo].reset_index(drop=True))
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def ia_local_disponivel() -> bool:
+    """Opcional: o Ollama só existe na máquina de quem roda o app. No Streamlit Cloud é sempre False."""
+    return agente.ollama_disponivel()
+
+
+def redigir_com_ia_local(k: str, acao: str, fatos: dict, permitidos: list) -> None:
+    st.session_state.setdefault("textos_ia", {})[(k, acao)] = agente.redigir(fatos, permitidos)
 
 
 def ranquear(sug: pd.DataFrame, pesos: dict, descartadas: set) -> pd.DataFrame:
@@ -286,6 +298,21 @@ def cartao_sugestao(posicao, r, linha, trans, motor, k, no_pacto, ja_pactuada, c
                     st.caption(f"**Por quê:** no histórico, equipes com {ITENS[item]['nome'].lower()} perto de "
                                f"{num(linha[item], 0)}% que fizeram essa ação variaram {pp(ev['media_com'])} no ciclo "
                                f"seguinte ({ev['n_com']} casos). As que não fizeram variaram {pp(ev['media_sem'])}.")
+                    if st.session_state.get("ia_local") and ev["n_sem"]:
+                        fatos, permitidos = agente.fatos_da_sugestao(
+                            acao["titulo"], ITENS[item]["nome"], linha[item], r.itens[0][1],
+                            ev["n_com"], ev["media_com"], ev["media_sem"])
+                        st.button("Redigir para o pacto (IA local)", key=f"ia_{r.acao}", type="tertiary",
+                                  on_click=redigir_com_ia_local, args=(k, r.acao, fatos, permitidos))
+                        res = st.session_state.get("textos_ia", {}).get((k, r.acao))
+                        if res is not None and res.ok:
+                            html(f"<div class='pulso-aviso' style='margin:.4rem 0'>{escape(res.texto)}"
+                                 f"<div class='pulso-muted' style='margin-top:.4rem'><i>Redigido por IA local "
+                                 f"({agente.MODELO}) e conferido: todos os números estão nos dados. "
+                                 "Revise antes de levar ao pacto.</i></div></div>")
+                        elif res is not None:
+                            extra = f" ({', '.join(num(n) for n in res.numeros_rejeitados)})" if res.numeros_rejeitados else ""
+                            st.caption(f"Texto da IA descartado: {res.motivo}{extra}. Vale a justificativa acima.")
         with c2:
             linhas = "".join(
                 f"<div class='pulso-linha'><span>{ITENS[i]['nome']}</span><span>{num(linha[i], 0)}% → "
@@ -504,6 +531,10 @@ with st.sidebar:
                           format_func=lambda e: nomes[e])
     foco = st.selectbox("Foco das sugestões", list(FOCOS), key="foco",
                         help="Dá mais peso ao eixo escolhido na ordem das sugestões.")
+    if ia_local_disponivel():
+        st.toggle("Redação por IA local", key="ia_local",
+                  help=f"Usa o modelo {agente.MODELO} rodando nesta máquina (Ollama). O texto só aparece "
+                       "se todos os números dele estiverem nos dados calculados.")
     html("<div class='pulso-aviso' style='margin-top:1.5rem'>Dados sintéticos para demonstração. "
          "Nenhum número representa uma equipe real.</div>")
 

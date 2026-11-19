@@ -1,0 +1,291 @@
+{
+  "aviso": "Base sintética · não é dado real",
+  "gerado_em": "2026-11-19",
+  "rf": {
+    "pergunta": "faixa de ação no próximo ciclo (Crítico < 500 · Atenção 500–749 · Excelência ≥ 750)",
+    "n_pares": 1122,
+    "n_equipes": 132,
+    "n_treino": 880,
+    "n_teste": 242,
+    "ciclos_teste": [
+      2026.1,
+      2026.2
+    ],
+    "distribuicao_teste": {
+      "Crítico": 17,
+      "Atenção": 176,
+      "Excelência": 49
+    },
+    "hiperparametros": {
+      "min_samples_leaf": 3,
+      "class_weight": "balanced",
+      "n_estimators": 400,
+      "random_state": 42
+    },
+    "grade_cv_treino": [
+      {
+        "min_samples_leaf": 3,
+        "class_weight": "balanced",
+        "acuracia": 0.861,
+        "f1_macro": 0.738,
+        "recall_critico": 0.64,
+        "precisao_critico": 0.727
+      },
+      {
+        "min_samples_leaf": 3,
+        "class_weight": null,
+        "acuracia": 0.872,
+        "f1_macro": 0.735,
+        "recall_critico": 0.533,
+        "precisao_critico": 0.833
+      },
+      {
+        "min_samples_leaf": 1,
+        "class_weight": null,
+        "acuracia": 0.869,
+        "f1_macro": 0.731,
+        "recall_critico": 0.533,
+        "precisao_critico": 0.8
+      },
+      {
+        "min_samples_leaf": 8,
+        "class_weight": "balanced",
+        "acuracia": 0.819,
+        "f1_macro": 0.719,
+        "recall_critico": 0.773,
+        "precisao_critico": 0.558
+      },
+      {
+        "min_samples_leaf": 8,
+        "class_weight": null,
+        "acuracia": 0.866,
+        "f1_macro": 0.716,
+        "recall_critico": 0.507,
+        "precisao_critico": 0.826
+      },
+      {
+        "min_samples_leaf": 1,
+        "class_weight": "balanced",
+        "acuracia": 0.843,
+        "f1_macro": 0.646,
+        "recall_critico": 0.493,
+        "precisao_critico": 0.86
+      }
+    ],
+    "random_forest_teste_temporal": {
+      "acuracia": 0.826,
+      "f1_macro": 0.729,
+      "recall_critico": 0.529,
+      "precisao_critico": 0.692
+    },
+    "baseline_persistencia": {
+      "acuracia": 0.839,
+      "f1_macro": 0.768,
+      "recall_critico": 0.706,
+      "precisao_critico": 0.75
+    },
+    "baseline_classe_comum": {
+      "acuracia": 0.727,
+      "f1_macro": 0.281,
+      "recall_critico": 0.0,
+      "precisao_critico": 0.0
+    },
+    "random_forest_cv_por_equipe": {
+      "acuracia": 0.856,
+      "f1_macro": 0.746,
+      "recall_critico": 0.685,
+      "precisao_critico": 0.708
+    },
+    "persistencia_cv_mesmas_linhas": {
+      "acuracia": 0.856,
+      "f1_macro": 0.751,
+      "recall_critico": 0.707,
+      "precisao_critico": 0.663
+    },
+    "equipes_que_mudaram_de_faixa_no_teste": 39,
+    "rf_acerto_entre_as_que_mudaram": 0.154,
+    "matriz_confusao": {
+      "linhas_real": [
+        "Crítico",
+        "Atenção",
+        "Excelência"
+      ],
+      "colunas_previsto": [
+        "Crítico",
+        "Atenção",
+        "Excelência"
+      ],
+      "valores": [
+        [
+          9,
+          8,
+          0
+        ],
+        [
+          4,
+          155,
+          17
+        ],
+        [
+          0,
+          13,
+          36
+        ]
+      ]
+    },
+    "matriz_confusao_persistencia": [
+      [
+        12,
+        5,
+        0
+      ],
+      [
+        4,
+        158,
+        14
+      ],
+      [
+        0,
+        16,
+        33
+      ]
+    ],
+    "importancia_permutacao_top10": {
+      "pontuacao_final": 0.1894,
+      "eixo3_total": 0.1222,
+      "eixo1_bloco_a": 0.0275,
+      "eixo1_bloco_b": 0.0221,
+      "IND10": 0.0213,
+      "delta_pontuacao": 0.0202,
+      "IND08": 0.0198,
+      "ATR5": 0.0178,
+      "ATR2": 0.0172,
+      "IND03": 0.0167
+    },
+    "importancia_impureza_top10": {
+      "pontuacao_final": 0.1766,
+      "eixo3_total": 0.1524,
+      "eixo1_total": 0.0754,
+      "eixo1_bloco_c": 0.0629,
+      "IND10": 0.0566,
+      "eixo1_bloco_b": 0.0373,
+      "IND08": 0.0358,
+      "IND04": 0.0345,
+      "ATR2": 0.0332,
+      "IND07": 0.0274
+    }
+  },
+  "prototipo": {
+    "n_equipes": 193,
+    "n_ciclos": 8,
+    "n_transicoes": 1351,
+    "motor": {
+      "mae_com_acoes_pp": 2.409,
+      "mae_sem_acoes_pp": 2.91,
+      "reducao_erro": 0.172,
+      "curva_aprendizado": [
+        {
+          "ciclos": 1,
+          "mae": 2.708
+        },
+        {
+          "ciclos": 2,
+          "mae": 2.554
+        },
+        {
+          "ciclos": 3,
+          "mae": 2.487
+        },
+        {
+          "ciclos": 4,
+          "mae": 2.446
+        },
+        {
+          "ciclos": 5,
+          "mae": 2.428
+        },
+        {
+          "ciclos": 6,
+          "mae": 2.406
+        }
+      ],
+      "correlacao_efeito_aprendido_vs_gerador": 0.996,
+      "ganho_medio_mutirao_sabado_pp": 1.83,
+      "acao_de_maior_ganho_medio": "acesso_avancado"
+    },
+    "kmeans_territorio": {
+      "variaveis": [
+        "idhm",
+        "saneamento",
+        "log(renda)"
+      ],
+      "k_app": 4,
+      "silhueta_por_k": {
+        "2": 0.559,
+        "3": 0.472,
+        "4": 0.458,
+        "5": 0.446,
+        "6": 0.441,
+        "7": 0.437
+      },
+      "silhueta_k_app": 0.458,
+      "k_maior_silhueta": 2,
+      "reproduz_grupos_do_app": true
+    },
+    "ponto_fraco": {
+      "pares": 1351,
+      "repete": 0.786,
+      "muda": 0.214
+    }
+  },
+  "ponto_fraco_base_comum": {
+    "pares": 1122,
+    "repete": 0.114,
+    "muda": 0.886
+  },
+  "ponto_fraco_regra_base_comum": {
+    "equipes": 129,
+    "com_ponto_fraco": 0,
+    "proporcao": 0.0
+  },
+  "regua": {
+    "mudam_de_zona": 523,
+    "manual_x_dicionario": {
+      "Aperfeiçoamento": {
+        "Aperfeiçoamento": 506,
+        "Crítica": 195,
+        "Excelência": 0,
+        "Insuficiente": 0,
+        "Qualidade": 0
+      },
+      "Crítica": {
+        "Aperfeiçoamento": 0,
+        "Crítica": 198,
+        "Excelência": 0,
+        "Insuficiente": 0,
+        "Qualidade": 0
+      },
+      "Excelência": {
+        "Aperfeiçoamento": 0,
+        "Crítica": 0,
+        "Excelência": 7,
+        "Insuficiente": 0,
+        "Qualidade": 17
+      },
+      "Insuficiente": {
+        "Aperfeiçoamento": 0,
+        "Crítica": 0,
+        "Excelência": 0,
+        "Insuficiente": 22,
+        "Qualidade": 0
+      },
+      "Qualidade": {
+        "Aperfeiçoamento": 311,
+        "Crítica": 0,
+        "Excelência": 0,
+        "Insuficiente": 0,
+        "Qualidade": 48
+      }
+    }
+  }
+}

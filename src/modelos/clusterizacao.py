@@ -1,83 +1,57 @@
 """
-Agrupamento de unidades por perfil de desempenho e contexto.
+Agrupamento de equipes por contexto do território — K-Means.
 
-Técnica: K-Means.
+Serve para comparação justa (CP-FIT, Brown et al. 2019): cada equipe é comparada
+com as de território parecido, não com a média da cidade. "Abaixo da média" pune
+quem atende o território mais difícil; "abaixo dos pares" diz onde há espaço real.
 
-Serve para comparação justa: uma unidade é comparada com as suas semelhantes,
-não com a média do município. É o que permite dizer ao gestor "a sua unidade
-está 22 pontos abaixo das unidades de contexto parecido" em vez de "abaixo da
-média", que não significa nada para quem atende um território difícil.
+O app (prototipo/pulso/motor.py · atribuir_grupos) usa K-Means com 4 grupos sobre
+IDHM, saneamento e log da renda. Este módulo traz as mesmas peças de forma
+genérica, para AVALIAR essa escolha no notebook 04 (silhueta por k) e para ser
+reaproveitado quando a base real chegar com variáveis de território.
 
-Responsável: Cauã Cabral · nomes dos grupos validados com Danilo Brito
+Dois limites declarados:
+- A base comum do desafio (132 equipes) não traz IDHM, saneamento nem renda; nela a
+  comparação justa é feita pelo GRUPO oficial (1 a 4), como o programa manda.
+- k = 4 é escolha de domínio (quatro níveis de vulnerabilidade, legíveis pelo gestor),
+  não o k de maior silhueta. A silhueta é reportada para mostrar que a estrutura
+  com 4 grupos é razoável, e não para escolher sozinha.
+
+Responsável: Nicolas Soares · leitura de domínio dos grupos: Danilo Brito
 """
 
+from __future__ import annotations
+
+import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 
-SEMENTE = 42
-
-VARIAVEIS = [
-    "eixo_indicadores_assistenciais",
-    "eixo_autoavaliacao_equipes",
-    "eixo_satisfacao_usuarios",
-    "idhm_bairro",
-    "saneamento_pct",
-]
+SEMENTE = 0          # mesma semente do app, para reproduzir os grupos exatamente
+N_INICIOS = 20
 
 
-def preparar(df: pd.DataFrame):
-    """Padroniza as variáveis — o K-Means é sensível a escala."""
-    return StandardScaler().fit_transform(df[VARIAVEIS])
+def padronizar(df: pd.DataFrame, colunas: list[str], em_log: tuple[str, ...] = ()) -> np.ndarray:
+    """Z-score das colunas (K-Means é sensível à escala). Colunas em `em_log` passam por log antes."""
+    x = df[colunas].astype(float).copy()
+    for c in em_log:
+        x[c] = np.log(x[c])
+    return StandardScaler().fit_transform(x)
 
 
-def escolher_k(X, faixa=range(2, 9), semente: int = SEMENTE):
-    """
-    Escolhe o número de grupos pelo silhouette score.
-
-    Devolve (melhor_k, {k: score}). Registrar o gráfico dessa escolha:
-    ele é evidência para o critério de Avaliação do Modelo.
-    """
-    notas = {}
-    for k in faixa:
-        rotulos = KMeans(n_clusters=k, n_init=10, random_state=semente).fit_predict(X)
-        notas[k] = round(float(silhouette_score(X, rotulos)), 3)
-    melhor = max(notas, key=notas.get)
-    return melhor, notas
+def agrupar(Z: np.ndarray, k: int, semente: int = SEMENTE) -> np.ndarray:
+    return KMeans(n_clusters=k, n_init=N_INICIOS, random_state=semente).fit_predict(Z)
 
 
-def agrupar(df: pd.DataFrame, k: int | None = None, semente: int = SEMENTE) -> pd.DataFrame:
-    """Acrescenta a coluna `grupo` ao dataframe."""
-    X = preparar(df)
-    if k is None:
-        k, _ = escolher_k(X, semente=semente)
-    modelo = KMeans(n_clusters=k, n_init=10, random_state=semente)
-    resultado = df.copy()
-    resultado["grupo"] = modelo.fit_predict(X)
-    return resultado
+def silhuetas(Z: np.ndarray, ks=range(2, 8), semente: int = SEMENTE) -> dict[int, float]:
+    """Silhueta média para cada k. Acima de 0,5 = estrutura razoável; abaixo de 0,25 = fraca."""
+    return {int(k): round(float(silhouette_score(Z, agrupar(Z, k, semente))), 3) for k in ks}
 
 
-def descrever_grupos(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Descreve cada grupo em linguagem de gestão.
-
-    Grupo sem nome compreensível não serve ao gestor: "grupo 3" não diz nada,
-    "desempenho médio em contexto vulnerável" diz tudo.
-    """
-    resumo = df.groupby("grupo").agg(
-        equipes=("unidade", "count"),
-        pulso_mediano=("pulso", "median"),
-        desempenho=("eixo_indicadores_assistenciais", "mean"),
-        idhm_medio=("idhm_bairro", "mean"),
-    ).round(2)
-
-    def nomear(linha):
-        desempenho = ("alto" if linha["desempenho"] >= 66
-                      else "médio" if linha["desempenho"] >= 40 else "baixo")
-        contexto = ("favorável" if linha["idhm_medio"] >= 0.72
-                    else "intermediário" if linha["idhm_medio"] >= 0.62 else "vulnerável")
-        return f"desempenho {desempenho}, contexto {contexto}"
-
-    resumo["descricao"] = resumo.apply(nomear, axis=1)
-    return resumo
+def resumo_grupos(df: pd.DataFrame, rotulos, colunas: list[str]) -> pd.DataFrame:
+    """Média de cada variável por grupo e quantas equipes há em cada um."""
+    return (df.assign(_grupo=np.asarray(rotulos))
+              .groupby("_grupo")[colunas].mean()
+              .assign(equipes=pd.Series(np.asarray(rotulos)).value_counts().sort_index().values)
+              .round(3))

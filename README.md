@@ -177,11 +177,33 @@ python -m pip install -r requirements.txt
 python -m src.etl.pipeline
 ```
 
-### 4. Dashboard
+### 4. Modelos e avaliação (SR2)
 
 ```bash
+python -m src.modelos.treinar_avaliar
+```
+
+Leva cerca de 1 minuto, sem GPU, sem chave de API e sem internet. Avalia todos os modelos e grava em `reports/` a fonte única dos números do deck e do site: `metricas_modelos.json`, `RELATORIO_MODELOS.md` e os gráficos de `figuras/`. O notebook `04_modelagem.ipynb` roda o mesmo comando e explica o resultado.
+
+### 5. Testes
+
+```bash
+python -m pytest -q tests                      # régua, classificador, ponto fraco, K-Means
+cd prototipo && python -m pytest -q tests      # agente local e app (no ambiente do protótipo)
+```
+
+Os testes também rodam sozinhos no GitHub a cada push (`.github/workflows/testes.yml`).
+
+### 6. App (MVP)
+
+O app do MVP é o **motor de sugestões**, em `prototipo/`. Ele tem o próprio ambiente: veja `prototipo/README.md`.
+
+```bash
+cd prototipo
 streamlit run app.py
 ```
+
+> O `app.py` da raiz é a v1 (Índice Pulso 0–100), descontinuada desde a virada para os três eixos. Fica no repositório como histórico e não é o app publicado.
 
 O `requirements.txt` mantém as dependências necessárias para reprodução do ambiente.
 
@@ -213,9 +235,9 @@ Documenta os problemas de qualidade identificados, as verificações realizadas 
 
 Explora os dados tratados, incluindo participação ao longo dos ciclos, comportamento das pontuações e eixos, diferenças entre distritos, indicadores do Eixo 3 por grupo de equipes, NPS e planos de ação.
 
-### 04 — Modelagem
+### 04 — Modelagem e avaliação
 
-Previsto para o SR2: classificação da faixa de ação (Random Forest) e agrupamento de equipes comparáveis (K-Means), sobre a `base_analitica.csv`. Prazo: 23/10/2026. Responsável: Nicolas.
+Avalia os quatro modelos do projeto, cada um contra uma linha de base honesta: o motor de sugestões (Ridge) e o K-Means de território, que estão no app; o Random Forest de faixa no próximo ciclo, que foi avaliado e ficou fora do app; e a regra de ponto fraco. Resumo em `reports/RELATORIO_MODELOS.md`.
 
 ---
 
@@ -227,7 +249,7 @@ O Vital Data Lab organiza a pontuação oficial do Recife Monitora, de **0 a 1.0
 2. **Três eixos:** autoavaliação (até 200), satisfação do usuário (até 200) e desempenho assistencial (até 600), cada um com status Crítico, Atenção ou Excelência;
 3. **Regras do programa aplicadas:** quórum de 30% no Bloco A, desclassificada tratada como ausente (nunca zero) e Eixo 3 comparado só dentro do mesmo grupo de equipes.
 
-> **Em transição (declarado em 15/10/2026):** o `src/indice/pulso.py` ainda calcula a versão anterior, de 0 a 100. Ele será substituído pelo cálculo dos três eixos na régua oficial até **18/10/2026** (responsável: Nicolas). O app continua no ar durante a troca.
+> **Régua no código (fechado em 19/11/2026):** `src/indice/regua.py` aplica as faixas de ação (500/750) e as duas versões da zona de certificação. O `src/indice/pulso.py` (0 a 100) é da v1 e fica só como histórico.
 
 ---
 
@@ -250,6 +272,19 @@ A camada de modelagem busca também fornecer explicabilidade sobre as variáveis
 O Eixo 3 é comparado apenas entre equipes do mesmo grupo, como o programa determina.
 
 Além disso, equipes com perfis semelhantes podem ser agrupadas para permitir comparações mais adequadas entre contextos próximos, evitando que toda equipe seja comparada simplesmente com a média geral.
+
+---
+
+## Modelos e resultados (SR2)
+
+| Pergunta | Técnica | Resultado na base sintética | No app? |
+|---|---|---|---|
+| Quanto cada ação muda cada item? | Ridge, um modelo por item | erro 2,41 pp com as ações × 2,91 sem (−17%); reencontra os efeitos do gerador (correlação 0,996) | **sim** |
+| Com quem é justo comparar? | K-Means de território, k = 4 | silhueta 0,46; k = 4 é escolha de domínio (4 níveis de vulnerabilidade) | **sim** |
+| Em que faixa a equipe vai estar no próximo ciclo? | Random Forest | F1 macro 0,73 × 0,77 da regra "fica onde está" (teste 2026.1–2026.2) | não: não supera a regra simples |
+| Qual é o ponto fraco da equipe? | regra de estabilidade (3 de 3 ciclos) | na base comum o item mais baixo se repete em só 11% dos casos | regra pronta para a base comum |
+
+Números gerados por `python -m src.modelos.treinar_avaliar`. Detalhes e limites em `reports/RELATORIO_MODELOS.md`.
 
 ---
 
@@ -291,18 +326,24 @@ vital-data-lab/
 │   │   └── pipeline.py
 │   │
 │   ├── indice/
-│   │   └── pulso.py          (em transição até 18/10/2026)
+│   │   ├── regua.py          (faixas 500/750 e zonas Manual × dicionário)
+│   │   └── pulso.py          (v1, 0–100: histórico)
 │   │
 │   ├── modelos/
-│   │   ├── classificador.py
-│   │   └── clusterizacao.py
+│   │   ├── classificador.py  (Random Forest, avaliação temporal)
+│   │   ├── clusterizacao.py  (K-Means, silhueta)
+│   │   └── treinar_avaliar.py (um comando → reports/)
 │   │
 │   ├── recomendacao/
-│   │   └── motor.py
+│   │   ├── motor.py
+│   │   └── ponto_fraco.py    (só aponta o que se repete)
 │   │
 │   └── viz/
 │       └── tema.py
 │
+├── reports/                  (métricas, relatório e figuras gerados)
+├── tests/
+├── prototipo/                (app do MVP: motor de sugestões + IA local opcional)
 └── docs/
 ```
 
@@ -319,7 +360,8 @@ Os documentos mais consultados incluem:
 | o problema do cliente | `docs/imersao/problema.md` |
 | o que se sabe do Recife Monitora | `docs/imersao/pesquisa_publica_recife_monitora.md` |
 | por que essa solução e não outra | `docs/produto/solucao.md` |
-| como a pontuação é calculada (em revisão até 18/10/2026) | `docs/produto/indice_pulso.md` |
+| como a pontuação é calculada | `src/indice/regua.py` · `docs/produto/indice_pulso.md` (v1) |
+| o que os modelos entregam, com números | `reports/RELATORIO_MODELOS.md` |
 | quem faz o quê e até quando | `docs/produto/plano_execucao.md` |
 | a fundamentação acadêmica | `docs/imersao/revisao_literatura.md` |
 | os riscos e planos de contingência | `docs/imersao/riscos.md` |
@@ -382,12 +424,14 @@ estão implementados e executáveis do início ao fim.
 
 ### Pendências declaradas
 
-| O que falta | Quando fecha | Responsável |
+| O que falta | Situação | Responsável |
 |---|---|---|
-| Substituir o cálculo antigo (0 a 100) pelo dos três eixos na régua oficial | 18/10/2026 | Nicolas |
-| Comparação do Eixo 3 por grupo como coluna do pipeline | 18/10/2026 | Marcela |
-| Modelos de classificação e agrupamento, com avaliação | 23/10/2026 | Nicolas |
-| Guia de Reprodutibilidade atualizado para o pipeline novo | 22/10/2026 | Pedro |
+| Modelos de classificação e agrupamento, com avaliação | **Fechado em 19/11/2026** (previsto 23/10): `src/modelos/`, notebook 04, `reports/` | Nicolas |
+| Régua oficial no código | **Fechado em 19/11/2026** (previsto 18/10): `src/indice/regua.py`; `pulso.py` (0–100) fica como histórico | Nicolas |
+| Ligar o motor de sugestões à base comum (132 equipes) e à régua 0–1.000 | Depois do SR2: o app roda na base sintética própria do protótipo | Nicolas |
+| Zona de certificação: Manual (900/800/600/400) × dicionário (850/700/550/400), 523 equipes-ciclo mudam | Levado ao NIIMA; o projeto usa o dicionário até a resposta | Naya |
+| Comparação do Eixo 3 por grupo como coluna do pipeline | Em aberto (previsto 18/10) | Marcela |
+| Guia de Reprodutibilidade atualizado para o pipeline novo | Em aberto (previsto 22/10); o README já cobre os comandos | Pedro |
 
 ---
 
