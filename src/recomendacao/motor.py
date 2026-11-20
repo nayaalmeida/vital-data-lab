@@ -1,4 +1,6 @@
 """
+v1 · HISTÓRICO: o motor do app é prototipo/pulso/motor.py (aprende com os pactos).
+
 Motor de recomendação prescritiva.
 
 Regras de negócio determinísticas sobre a saída do modelo. Sem modelo

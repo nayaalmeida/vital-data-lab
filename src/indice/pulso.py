@@ -1,4 +1,6 @@
 """
+v1 · HISTÓRICO: a régua usada pelo projeto está em src/indice/regua.py (0 a 1.000).
+
 Cálculo do Pulso da Unidade — índice composto de 0 a 100.
 
 MÉTODO, e a literatura que o sustenta
