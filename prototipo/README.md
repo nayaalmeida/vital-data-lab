@@ -24,7 +24,7 @@ Os prints da v1 estão em [prints/v1](prints/v1/README.md) e os da v2 em [prints
 
 ## Como rodar
 
-Requer Python 3.11 ou mais recente. Use um ambiente virtual só para esta pasta, porque as versões diferem das da raiz.
+Requer Python 3.12 ou mais recente (o `numpy` travado aqui não tem versão para 3.11). Use um ambiente virtual só para esta pasta, porque as versões diferem das da raiz.
 
 ```bash
 cd prototipo
@@ -63,9 +63,35 @@ app.py                     telas e filtros (Streamlit + Plotly)
 pulso/eixos.py             os três eixos, os itens, as metas e o catálogo de ações
 pulso/dados.py             base sintética: equipes, eixos por ciclo e pactos
 pulso/motor.py             aprendizado dos efeitos, sugestões e evidência
+pulso/agente.py            redação opcional por IA local (Ollama) com verificação de números
+tests/                     testes do agente e do app (python -m pytest -q tests)
 pulso/estilo.py            identidade visual (cores e fonte do site)
 scripts/capturar_prints.py prints das telas, PDF e galeria em Markdown
 prints/v1, prints/v2       prints de cada versão
+```
+
+## Redação por IA local (opcional)
+
+Cada sugestão já vem com a justificativa calculada pelo motor ("Por quê: …"). Se a máquina tiver o **Ollama** com o modelo `qwen2.5:7b`, aparece na barra lateral a chave **Redação por IA local**. Com ela ligada, cada sugestão ganha o botão **Redigir para o pacto**: o modelo reescreve os fatos calculados em duas frases para o gestor.
+
+- **Nada sai da máquina.** O modelo roda localmente e não precisa de chave de API.
+- **Verificação de números.** Se o texto citar qualquer número que não esteja nos dados calculados, ele é descartado e a tela mostra o motivo. A ideia vem do `servico/verificacao.py` do agente de referência da disciplina.
+- **Sem Ollama, nada muda.** No Streamlit Cloud a chave nem aparece, e o app publicado fica igual.
+- **Limite:** a verificação garante que todo número existe nos dados, mas não que foi atribuído ao item certo. Por isso o texto vem marcado como redigido por IA, para a pessoa revisar.
+
+Para ligar:
+
+```bash
+# 1. instale o Ollama (ollama.com) e confira http://localhost:11434 → "Ollama is running"
+ollama pull qwen2.5:7b        # 4,7 GB, deixe baixando antes
+ollama list                   # confere se o modelo aparece
+streamlit run app.py          # a chave aparece na barra lateral
+```
+
+Código em `pulso/agente.py`. Testes (com um Ollama simulado, sem baixar o modelo):
+
+```bash
+python -m pytest -q tests
 ```
 
 ## Ligar às bases do projeto

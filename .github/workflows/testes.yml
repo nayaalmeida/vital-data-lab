@@ -1,0 +1,36 @@
+# Roda os testes a cada push e pull request — evidência de reprodutibilidade para o SR2.
+name: testes
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pipeline-e-modelos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Pipeline de dados (precisa gerar a mesma base que está no repositório)
+        run: |
+          python -m src.etl.pipeline
+          git diff --exit-code data/processed/base_analitica.csv
+      - run: python -m pytest -q tests
+
+  prototipo:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prototipo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt pytest
+      - run: python -m pytest -q tests
