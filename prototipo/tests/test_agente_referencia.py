@@ -61,6 +61,24 @@ def test_aba_mostra_a_resposta_do_agente(agente_falso):
     assert any("modo: regras" in c.value for c in at.caption)
 
 
+def test_resposta_montada_dos_fatos_vira_topicos(agente_falso):
+    agente_falso["resposta"].update(
+        modo="regras", aviso="Base sintética.",
+        fatos=["Quem precisa de atenção primeiro no Distrito Sanitário V: Equipe 091 (USF V-497), com 2 alertas.",
+               "3 alertas em 2 das 15 equipes avaliadas.",
+               "Em ordem de prioridade (mais alertas de severidade alta primeiro, depois menor pontuação):",
+               "Equipe 091 (USF V-497), 513,1 pontos: zona Crítica com 513,1 pontos.",
+               "Equipe 016 (USF V-211), 669,3 pontos: caiu 78,2 pontos desde 2026.1.",
+               "Critérios de alerta provisórios, a validar com o NIIMA."],
+        verificacao={"executada": False, "aprovada": None, "numeros_nao_encontrados": [],
+                     "motivo": "a resposta é uma lista de nomes em ordem: o serviço responde e o modelo não é chamado"})
+    at = _perguntar(_rodar(), "Quais equipes precisam de atenção?")
+    topicos = next(m.value for m in at.markdown if "- Em ordem de prioridade" in m.value)
+    assert "    - Equipe 091" in topicos and "    - Equipe 016" in topicos
+    assert "\n- Critérios de alerta" in topicos
+    assert any("o modelo não é chamado" in c.value for c in at.caption)
+
+
 def test_aba_avisa_quando_o_texto_do_modelo_foi_rejeitado(agente_falso):
     agente_falso["resposta"]["verificacao"] = {"executada": True, "aprovada": False,
                                                "numeros_nao_encontrados": ["82"]}

@@ -525,11 +525,30 @@ def mostrar_resposta_agente(item: dict) -> None:
             st.error(f"Sem resposta: {item['erro']}.")
             return
         r = item["resposta"]
-        st.write(r["resposta"])
+        fatos = r.get("fatos") or []
+        if str(r.get("modo", "")).startswith("regras") and len(fatos) > 1:
+            # Montada direto dos fatos: a primeira frase é a resposta; o resto vira tópicos, e as linhas de
+            # equipe que vêm depois de "Em ordem de prioridade (…):" ficam recuadas embaixo dela.
+            st.markdown(fatos[0])
+            linhas, dentro = [], False
+            for fato in fatos[1:]:
+                dentro = dentro and fato.startswith("Equipe ")
+                linhas.append(("    - " if dentro else "- ") + fato)
+                dentro = dentro or fato.endswith(":")
+            st.markdown("\n".join(linhas))
+            if r.get("aviso"):
+                st.caption(r["aviso"])
+        else:
+            st.write(r["resposta"])
         v = r.get("verificacao") or {}
         if v.get("executada") and not v.get("aprovada"):
             st.warning("O texto do modelo foi rejeitado (números fora dos fatos: "
                        + ", ".join(v.get("numeros_nao_encontrados") or []) + "). Resposta pelo modo regras.")
+            if v.get("texto_rejeitado"):
+                with st.expander("Texto do modelo que foi barrado"):
+                    st.write(v["texto_rejeitado"])
+        elif not v.get("executada") and v.get("motivo"):
+            st.caption(f"Sem conferência de números: {v['motivo'].rstrip('.')}.")
         st.caption(f"modo: {r.get('modo')} · recorte: {r.get('recorte')} · ciclo {r.get('ciclo') or 'último'}")
         if r.get("fontes"):
             with st.expander("Fontes"):
