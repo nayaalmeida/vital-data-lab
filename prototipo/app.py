@@ -556,8 +556,9 @@ def tela_agente(perfil, distrito):
     st.caption(f"Serviço no ar em {agente_referencia.URL} · {estado_modelo} · zonas {cortes}")
 
     escopos = escopos_do_agente() or {}
-    niveis = {"Rede": "rede", "Distrito": "distrito", "Equipe": "equipe"}
-    padrao = {"Gestão central": "Rede", "Gestão distrital": "Distrito", "Equipe": "Equipe"}[perfil]
+    # Sem recorte por equipe: as equipes deste protótipo não existem na base comum.
+    niveis = {"Rede": "rede", "Distrito": "distrito"}
+    padrao = "Rede" if perfil == "Gestão central" else "Distrito"
     c1, c2, c3 = st.columns([1.1, 1.6, 0.9])
     # As chaves levam o perfil e o distrito da barra lateral para o recorte acompanhar quando eles mudam.
     rotulo = c1.radio("Recorte da pergunta", list(niveis), index=list(niveis).index(padrao), horizontal=True,
@@ -570,12 +571,6 @@ def tela_agente(perfil, distrito):
         if ids:
             id_escopo = c2.selectbox("Distrito (base comum)", ids, index=ids.index(nosso) if nosso in ids else 0,
                                      format_func=distritos.get, key=f"agente_distrito_{nosso}")
-    elif rotulo == "Equipe":
-        equipes = {e["id"]: f"{e['unidade']} · {e['nome']}" for e in escopos.get("equipes", [])}
-        if equipes:
-            id_escopo = c2.selectbox("Equipe (base comum)", list(equipes), format_func=equipes.get,
-                                     key="agente_equipe",
-                                     help="As equipes da base comum não são as deste protótipo.")
     ciclos = escopos.get("ciclos") or saude.get("ciclos") or []
     ciclo_agente = c3.selectbox("Ciclo", ["Último"] + list(ciclos)[::-1], key="agente_ciclo")
 

@@ -104,7 +104,7 @@ A aba **Pergunte ao agente** liga o app ao agente Recife Monitora que o professo
 
 - **Base diferente.** O agente responde sobre a base comum do desafio (`DADOS/`, 132 equipes), a mesma de `data/` na raiz deste repositório. O protótipo roda na base sintética própria. Números e nomes não batem até o motor migrar para a base comum (pendência registrada no README da raiz).
 - **Mesma régua.** O agente usa as zonas do dicionário de dados (850/700/550/400), a mesma régua que o projeto adotou em `src/indice/regua.py`. A aba mostra os cortes que o serviço está usando.
-- **Recorte.** A gestão central pergunta sobre a rede; a distrital, sobre o próprio distrito (o "DS VIII" da barra lateral vira o "VIII" do agente). A equipe é escolhida na lista da base comum, porque as equipes deste protótipo não existem lá.
+- **Recorte: rede ou distrito.** A gestão central pergunta sobre a rede; a distrital e a equipe, sobre o distrito da barra lateral (o "DS VIII" vira o "VIII" do agente). Não há recorte por equipe porque as equipes deste protótipo não existem na base comum; ele entra depois da migração.
 - **Sem o serviço, nada quebra.** A aba avisa que o agente está fora do ar e mostra como ligar. No Streamlit Cloud ela fica assim.
 
 Para ligar, siga a seção 1 do README do agente (no pacote da disciplina, pasta `agente/`). Em resumo, num terminal separado e com o ambiente do agente ativado:

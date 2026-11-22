@@ -77,6 +77,16 @@ def test_gestor_distrital_pergunta_sobre_o_proprio_distrito(agente_falso):
     assert agente_falso["pedidos"][-1]["escopo"] == {"nivel": "distrito", "id": "VIII"}
 
 
+def test_recorte_so_tem_rede_e_distrito(agente_falso):
+    at = _rodar()
+    next(r for r in at.radio if r.label == "Perfil de acesso").set_value("Equipe").run()
+    recorte = next(r for r in at.radio if r.label == "Recorte da pergunta")
+    assert list(recorte.options) == ["Rede", "Distrito"]
+    assert recorte.value == "Distrito"
+    at = _perguntar(at, "Quais equipes precisam de atenção?")
+    assert agente_falso["pedidos"][-1]["escopo"]["nivel"] == "distrito"
+
+
 # ----------------------------------------------------------------------------- ponto fraco
 
 def _base(equipe, pares):
