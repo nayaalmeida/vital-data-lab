@@ -44,8 +44,11 @@ O app abre em http://localhost:8501. A primeira carga treina o motor e leva algu
 | **Sugestões** | Todos | Os três eixos da equipe comparados com equipes de território parecido e as 5 ações sugeridas para o pacto, com o efeito esperado em cada item, a evidência do histórico e os botões "Incluir no pacto" e "Não se aplica" |
 | **Pacto do ciclo** | Todos | As ações escolhidas, a projeção dos eixos no fim do ciclo e como o resultado volta para a IA |
 | **O que a IA aprendeu** | Todos | O efeito médio de cada ação em cada item, a melhora da previsão a cada ciclo, como o motor funciona, o que mudou desde a v1, fontes e privacidade |
+| **Pergunte ao agente** | Todos | Perguntas em linguagem natural ao agente de referência da disciplina, sobre a base comum do desafio (veja [abaixo](#pergunte-ao-agente-opcional)) |
 
 Na barra lateral ficam o perfil de acesso (central, distrital ou equipe), o ciclo, o distrito, a equipe e o **foco das sugestões**: um eixo ou os três. Qualquer mudança recalcula as sugestões na hora.
+
+**Ponto fraco só quando se repete.** Na tela de sugestões, o ▼ marca um item só quando a equipe ficou 5 pp ou mais abaixo das equipes de território parecido em **cada um dos últimos 3 ciclos**. Um ciclo só não basta: o item mais baixo de uma equipe costuma mudar de um ciclo para o outro (seção 12 do agente de referência; na base comum, o mais baixo do Eixo 3 se repete no ciclo seguinte em só ~11% dos casos). É a mesma janela de 3 de 3 ciclos de `src/recomendacao/ponto_fraco.py`.
 
 ## Como o motor funciona
 
@@ -64,6 +67,7 @@ pulso/eixos.py             os três eixos, os itens, as metas e o catálogo de a
 pulso/dados.py             base sintética: equipes, eixos por ciclo e pactos
 pulso/motor.py             aprendizado dos efeitos, sugestões e evidência
 pulso/agente.py            redação opcional por IA local (Ollama) com verificação de números
+pulso/agente_referencia.py cliente do agente de referência da disciplina (aba "Pergunte ao agente")
 tests/                     testes do agente e do app (python -m pytest -q tests)
 pulso/estilo.py            identidade visual (cores e fonte do site)
 scripts/capturar_prints.py prints das telas, PDF e galeria em Markdown
@@ -93,6 +97,27 @@ Código em `pulso/agente.py`. Testes (com um Ollama simulado, sem baixar o model
 ```bash
 python -m pytest -q tests
 ```
+
+## Pergunte ao agente (opcional)
+
+A aba **Pergunte ao agente** liga o app ao agente Recife Monitora que o professor distribuiu como implementação de referência (`recife_monitora.zip`). O agente é um serviço HTTP à parte: este app só envia a pergunta e o recorte, e mostra a resposta, as fontes, o modo e o resultado da verificação de números feita pelo serviço. O ponto de partida foi o `exemplos/grupo1_streamlit.py` do pacote.
+
+- **Base diferente.** O agente responde sobre a base comum do desafio (`DADOS/`, 132 equipes), a mesma de `data/` na raiz deste repositório. O protótipo roda na base sintética própria. Números e nomes não batem até o motor migrar para a base comum (pendência registrada no README da raiz).
+- **Mesma régua.** O agente usa as zonas do dicionário de dados (850/700/550/400), a mesma régua que o projeto adotou em `src/indice/regua.py`. A aba mostra os cortes que o serviço está usando.
+- **Recorte: rede ou distrito.** A gestão central pergunta sobre a rede; a distrital e a equipe, sobre o distrito da barra lateral (o "DS VIII" vira o "VIII" do agente). Não há recorte por equipe porque as equipes deste protótipo não existem na base comum; ele entra depois da migração.
+- **Respostas legíveis.** Quando o serviço monta a resposta direto dos fatos (modo `regras`), a primeira frase aparece como resposta e o resto em tópicos, com a fila de equipes recuada. A aba também diz por que os números não foram conferidos (por exemplo, em "quais equipes precisam de atenção?" o modelo nem é chamado) e, quando a verificação barra um texto do modelo, mostra o texto barrado.
+- **Sem o serviço, nada quebra.** A aba avisa que o agente está fora do ar e mostra como ligar. No Streamlit Cloud ela fica assim.
+
+Para ligar, siga a seção 1 do README do agente (no pacote da disciplina, pasta `agente/`). Em resumo, num terminal separado e com o ambiente do agente ativado:
+
+```bash
+python limpeza.py                       # uma vez: gera dados_limpos/
+uvicorn servico.api:app --port 8000     # deixe rodando
+```
+
+Sem o Ollama, o agente responde no modo `regras`, direto dos fatos. Com o Ollama e o `qwen2.5:7b`, ele redige parte das respostas e confere os números. Se o serviço estiver em outro endereço, defina `AGENTE_URL` antes de subir o app (padrão: `http://127.0.0.1:8000`).
+
+Código em `pulso/agente_referencia.py`. Os testes usam um agente simulado, sem precisar do serviço.
 
 ## Ligar às bases do projeto
 

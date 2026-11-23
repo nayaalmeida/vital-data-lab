@@ -7,12 +7,12 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from pulso import agente, estilo
+from pulso import agente, agente_referencia, estilo
 from pulso.dados import DISTRITOS, gerar_base
 from pulso.eixos import ACOES, CICLOS, EIXOS, ITENS, ITENS_DO_EIXO, PROXIMO_CICLO, pontuacoes
 from pulso.estilo import CINZA, CORES_EIXO, TINTA, VERDE, VERMELHO
-from pulso.motor import (atribuir_grupos, confianca, efeitos, efeitos_medios, evidencia, projetar,
-                         sugestoes, transicoes, treinar)
+from pulso.motor import (atribuir_grupos, confianca, efeitos, efeitos_medios, evidencia, fracos_persistentes,
+                         projetar, sugestoes, transicoes, treinar)
 
 st.set_page_config(page_title="Pulso da Unidade · Vital Data Lab", page_icon="🩺", layout="wide")
 estilo.aplicar()
@@ -54,6 +54,17 @@ def ia_local_disponivel() -> bool:
 
 def redigir_com_ia_local(k: str, acao: str, fatos: dict, permitidos: list) -> None:
     st.session_state.setdefault("textos_ia", {})[(k, acao)] = agente.redigir(fatos, permitidos)
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def agente_no_ar() -> dict | None:
+    """Opcional: o serviço do agente da disciplina só existe na máquina de quem o sobe."""
+    return agente_referencia.saude()
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def escopos_do_agente() -> dict | None:
+    return agente_referencia.escopos()
 
 
 def ranquear(sug: pd.DataFrame, pesos: dict, descartadas: set) -> pd.DataFrame:
@@ -263,11 +274,11 @@ def tela_visao(escopo, escopo_anterior, historico, rank_escopo, base_ciclo, reco
                        file_name=f"pulso_{recorte.replace(' ', '_')}.csv", mime="text/csv")
 
 
-def cartao_eixo(e, linha, anterior, pares):
+def cartao_eixo(e, linha, anterior, pares, fracos):
     itens = ""
     for i in ITENS_DO_EIXO[e]:
         v, ref = linha[i], pares[i].median()
-        fraco = v <= ref - 5
+        fraco = i in fracos
         meta = f" · meta {ITENS[i]['meta']}%" if "meta" in ITENS[i] else ""
         itens += (f"<div class='pulso-linha'><span>{'▼ ' if fraco else ''}{ITENS[i]['nome']}</span>"
                   f"<span><b class='{'pulso-desce' if fraco else ''}'>{num(v, 0)}%</b>"
@@ -335,17 +346,19 @@ def cartao_sugestao(posicao, r, linha, trans, motor, k, no_pacto, ja_pactuada, c
                       on_click=descartar, args=(k, r.acao))
 
 
-def tela_sugestoes(linha, base_ciclo, anterior, rank_eq, trans, motor, k, ja_pactuadas, ciclo, ciclo_seg, foco):
+def tela_sugestoes(linha, base, base_ciclo, anterior, rank_eq, trans, motor, k, ja_pactuadas, ciclo, ciclo_seg, foco):
     pares = base_ciclo[(base_ciclo["grupo"] == linha["grupo"]) & (base_ciclo["equipe"] != linha["equipe"])]
+    fracos = fracos_persistentes(base, linha["equipe"], linha["grupo"], ciclo)
     html(f"<h3 style='margin-bottom:.2rem'>{linha['nome']}</h3>"
          f"<span class='pulso-tag'>{linha['distrito']}</span><span class='pulso-tag'>{linha['bairro']}</span>"
          f"<span class='pulso-tag'>CNES {linha['cnes']}</span><span class='pulso-tag'>Território {linha['grupo']}</span>"
          f"<span class='pulso-tag'>{linha['respostas_eixo2']} respostas na pesquisa do ciclo</span>")
     st.caption(f"Resultado do Recife Monitora no ciclo {ciclo}. \"Pares\" são as equipes com território parecido; "
-               "▼ marca itens 5 pp ou mais abaixo delas.")
+               "▼ marca itens 5 pp ou mais abaixo delas em cada um dos últimos 3 ciclos. Um ciclo só não basta: "
+               "o item mais baixo de uma equipe costuma mudar de um ciclo para o outro.")
     for col, e in zip(st.columns(3), EIXOS):
         with col:
-            cartao_eixo(e, linha, anterior, pares)
+            cartao_eixo(e, linha, anterior, pares, fracos)
 
     st.markdown(f"#### Ações sugeridas para o pacto de {ciclo_seg}")
     st.caption(f"Ordenadas pelo ganho esperado nos eixos, com foco em: **{foco.lower()}**. "
@@ -505,6 +518,100 @@ def tela_ia(motor, estado):
          "dão a geografia, mas os eixos, os pactos e os efeitos das ações foram gerados e não representam nenhuma equipe real.</div>")
 
 
+def mostrar_resposta_agente(item: dict) -> None:
+    st.chat_message("user").write(item["pergunta"])
+    with st.chat_message("assistant"):
+        if item.get("erro"):
+            st.error(f"Sem resposta: {item['erro']}.")
+            return
+        r = item["resposta"]
+        fatos = r.get("fatos") or []
+        if str(r.get("modo", "")).startswith("regras") and len(fatos) > 1:
+            # Montada direto dos fatos: a primeira frase é a resposta; o resto vira tópicos, e as linhas de
+            # equipe que vêm depois de "Em ordem de prioridade (…):" ficam recuadas embaixo dela.
+            st.markdown(fatos[0])
+            linhas, dentro = [], False
+            for fato in fatos[1:]:
+                dentro = dentro and fato.startswith("Equipe ")
+                linhas.append(("    - " if dentro else "- ") + fato)
+                dentro = dentro or fato.endswith(":")
+            st.markdown("\n".join(linhas))
+            if r.get("aviso"):
+                st.caption(r["aviso"])
+        else:
+            st.write(r["resposta"])
+        v = r.get("verificacao") or {}
+        if v.get("executada") and not v.get("aprovada"):
+            st.warning("O texto do modelo foi rejeitado (números fora dos fatos: "
+                       + ", ".join(v.get("numeros_nao_encontrados") or []) + "). Resposta pelo modo regras.")
+            if v.get("texto_rejeitado"):
+                with st.expander("Texto do modelo que foi barrado"):
+                    st.write(v["texto_rejeitado"])
+        elif not v.get("executada") and v.get("motivo"):
+            st.caption(f"Sem conferência de números: {v['motivo'].rstrip('.')}.")
+        st.caption(f"modo: {r.get('modo')} · recorte: {r.get('recorte')} · ciclo {r.get('ciclo') or 'último'}")
+        if r.get("fontes"):
+            with st.expander("Fontes"):
+                for f in r["fontes"]:
+                    st.write(f"**{f['tabela']}**: {', '.join(f['campos'])}")
+
+
+def tela_agente(perfil, distrito):
+    st.markdown("#### Pergunte ao agente")
+    html("<div class='pulso-aviso'>O agente é o serviço de referência da disciplina. Ele responde sobre a "
+         "<b>base comum do desafio</b> (132 equipes), e não sobre a base deste protótipo: números e nomes não "
+         "batem até a migração. As duas bases são sintéticas.</div>")
+    saude = agente_no_ar()
+    if saude is None:
+        st.info(f"O serviço do agente não respondeu em {agente_referencia.URL}. Para ligar, rode na pasta "
+                "`agente/` do material da disciplina: `uvicorn servico.api:app --port 8000`. O passo a passo "
+                "está no README do protótipo, em \"Pergunte ao agente\".")
+        st.button("Tentar de novo", on_click=agente_no_ar.clear)
+        return
+    modelo = saude.get("modelo") or {}
+    estado_modelo = (f"modelo {modelo.get('nome')} acessível" if modelo.get("acessivel")
+                     else "modelo local inacessível: as respostas saem no modo regras, direto dos fatos")
+    cortes = " / ".join(str(z["a_partir_de"]) for z in saude.get("regua_zonas", []))
+    st.caption(f"Serviço no ar em {agente_referencia.URL} · {estado_modelo} · zonas {cortes}")
+
+    escopos = escopos_do_agente() or {}
+    # Sem recorte por equipe: as equipes deste protótipo não existem na base comum.
+    niveis = {"Rede": "rede", "Distrito": "distrito"}
+    padrao = "Rede" if perfil == "Gestão central" else "Distrito"
+    c1, c2, c3 = st.columns([1.1, 1.6, 0.9])
+    # As chaves levam o perfil e o distrito da barra lateral para o recorte acompanhar quando eles mudam.
+    rotulo = c1.radio("Recorte da pergunta", list(niveis), index=list(niveis).index(padrao), horizontal=True,
+                      key=f"agente_nivel_{perfil}")
+    id_escopo = None
+    if rotulo == "Distrito":
+        distritos = {d["id"]: d["nome"] for d in escopos.get("distritos", [])}
+        ids = list(distritos)
+        nosso = distrito.split()[-1] if distrito != TODOS else None  # "DS VIII" -> "VIII"
+        if ids:
+            id_escopo = c2.selectbox("Distrito (base comum)", ids, index=ids.index(nosso) if nosso in ids else 0,
+                                     format_func=distritos.get, key=f"agente_distrito_{nosso}")
+    ciclos = escopos.get("ciclos") or saude.get("ciclos") or []
+    ciclo_agente = c3.selectbox("Ciclo", ["Último"] + list(ciclos)[::-1], key="agente_ciclo")
+
+    conversa = st.session_state.setdefault("conversa_agente", [])
+    historico = st.container()
+    pergunta = st.chat_input("Ex.: Quais equipes precisam de atenção?", key="agente_pergunta")
+    if pergunta:
+        with st.spinner("Consultando o agente. Se a pergunta for ao modelo local, a primeira resposta pode levar "
+                        "até 1 minuto e meio…"):
+            try:
+                resposta = agente_referencia.perguntar(pergunta, niveis[rotulo], id_escopo,
+                                                       None if ciclo_agente == "Último" else ciclo_agente)
+                conversa.append({"pergunta": pergunta, "resposta": resposta})
+            except agente_referencia.ErroAgente as erro:
+                conversa.append({"pergunta": pergunta, "erro": str(erro)})
+    with historico:
+        for item in conversa:
+            mostrar_resposta_agente(item)
+    if conversa:
+        st.button("Limpar conversa", on_click=conversa.clear)
+
+
 # ----------------------------------------------------------------------------- página
 
 base, pactos, trans, motor = carregar()
@@ -557,10 +664,12 @@ html(f"""<div class='pulso-hero'><div class='pulso-eyebrow'>Vital Data Lab · pr
     <b>{subtitulo} · ciclo {ciclo}</b></p></div>""")
 
 if perfil == "Equipe":
-    aba_sug, aba_pacto, aba_ia = st.tabs(["Sugestões", "Pacto do ciclo", "O que a IA aprendeu"])
+    aba_sug, aba_pacto, aba_ia, aba_agente = st.tabs(["Sugestões", "Pacto do ciclo", "O que a IA aprendeu",
+                                                      "Pergunte ao agente"])
 else:
-    aba_visao, aba_sug, aba_pacto, aba_ia = st.tabs(["Visão do ciclo", "Sugestões da equipe", "Pacto do ciclo",
-                                                     "O que a IA aprendeu"])
+    aba_visao, aba_sug, aba_pacto, aba_ia, aba_agente = st.tabs(["Visão do ciclo", "Sugestões da equipe",
+                                                                 "Pacto do ciclo", "O que a IA aprendeu",
+                                                                 "Pergunte ao agente"])
     with aba_visao:
         escopo_anterior = None
         if ciclo_anterior:
@@ -571,8 +680,11 @@ else:
                    base_ciclo, recorte, distrito)
 
 with aba_sug:
-    tela_sugestoes(linha, base_ciclo, anterior, rank_eq, trans, motor, k, ja_pactuadas, ciclo, ciclo_seguinte, foco)
+    tela_sugestoes(linha, base, base_ciclo, anterior, rank_eq, trans, motor, k, ja_pactuadas, ciclo, ciclo_seguinte,
+                   foco)
 with aba_pacto:
     tela_pacto(linha, sug_eq, rank_eq, motor, k, ciclo_seguinte)
 with aba_ia:
     tela_ia(motor, base_ciclo)
+with aba_agente:
+    tela_agente(perfil, distrito)

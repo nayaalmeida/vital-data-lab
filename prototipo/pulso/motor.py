@@ -170,3 +170,23 @@ def confianca(n_aplicacoes: int) -> str:
     if n_aplicacoes >= 60:
         return "média"
     return "baixa"
+
+
+def fracos_persistentes(base: pd.DataFrame, equipe: str, grupo: str, ciclo: str,
+                        janela: int = 3, limiar: float = 5.0) -> set[str]:
+    """Itens em que a equipe ficou `limiar` pp ou mais abaixo da mediana dos pares em cada um dos
+    últimos `janela` ciclos (até `ciclo`, inclusive).
+
+    Um ciclo só não basta para apontar um ponto fraco: o item mais baixo de uma equipe muda de um
+    ciclo para o outro na maioria dos casos (seção 12 do agente de referência da disciplina e
+    src/recomendacao/ponto_fraco.py, que usa a mesma janela de 3 de 3 ciclos).
+    """
+    i = CICLOS.index(ciclo)
+    if i + 1 < janela:
+        return set()
+    ciclos = CICLOS[i + 1 - janela:i + 1]
+    recorte = base[(base["grupo"] == grupo) & base["ciclo"].isin(ciclos)]
+    pares = recorte[recorte["equipe"] != equipe].groupby("ciclo")[list(ITENS)].median().reindex(ciclos)
+    propria = recorte[recorte["equipe"] == equipe].set_index("ciclo")[list(ITENS)].reindex(ciclos)
+    abaixo = propria <= pares - limiar
+    return {item for item in ITENS if bool(abaixo[item].all())}
