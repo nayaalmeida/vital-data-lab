@@ -15,7 +15,9 @@
 | Documento | Conteúdo | Dono |
 |---|---|---|
 | [produto/solucao.md](produto/solucao.md) | As três opções avaliadas e a escolhida | Naya |
-| [produto/indice_pulso.md](produto/indice_pulso.md) | Como o índice é calculado, com base metodológica | Cauã |
+| [produto/indice_pulso.md](produto/indice_pulso.md) | v1 (histórico): o Índice Pulso 0–100 e por que foi substituído pela régua oficial | Cauã |
+| [sr2_entrega_tecnica.md](sr2_entrega_tecnica.md) | Entrega de IA do SR2: o que está pronto, como conferir e o que falta | Nicolas |
+| [../reports/RELATORIO_MODELOS.md](../reports/RELATORIO_MODELOS.md) | Resultados e limites de todos os modelos (gerado pelo código) | Nicolas |
 | [produto/plano_execucao.md](produto/plano_execucao.md) | Quem faz o quê, até quando, e o critério de pronto | Naya |
 
 ## Gestão — como trabalhamos

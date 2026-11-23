@@ -1,5 +1,7 @@
 # Pulso da Unidade — como o índice é calculado
 
+> **v1 · histórico.** Este documento descreve o Índice Pulso de 0 a 100 da primeira versão. Depois da conversa com o Recife Monitora (out/2026), o projeto passou a usar a **régua oficial de 0 a 1.000** e os três eixos (`src/indice/regua.py`), e o produto virou o motor de sugestões de ações (`prototipo/`). O texto fica aqui como registro da decisão.
+
 **Dono:** Cauã Cabral · fundamentação em `docs/imersao/revisao_literatura.md`
 
 ---

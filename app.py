@@ -1,4 +1,7 @@
 """
+v1 · HISTÓRICO. Este é o painel da primeira versão (Índice Pulso 0–100), descontinuado.
+O app do MVP é prototipo/app.py. Veja o README.
+
 Vital Data Lab — dashboard do Pulso da Unidade.
 
     python src/etl/pipeline.py      # gera os dados

@@ -1,5 +1,7 @@
 # Vital Data Lab
 
+[![testes](https://github.com/nayaalmeida/vital-data-lab/actions/workflows/testes.yml/badge.svg)](https://github.com/nayaalmeida/vital-data-lab/actions/workflows/testes.yml)
+
 **Tripé de Ação — apoio à decisão para a Atenção Básica do Recife**
 
 Projeto 5 · Gestão de Tecnologia da Informação · CESAR School · 2026.2  
@@ -7,45 +9,55 @@ Desafio: Recife Monitora — SEAB / NIIMA, Secretaria de Saúde do Recife
 
 > *o pulso do Recife em decisões que salvam*
 
-🔗 **Site do projeto:** https://sites.google.com/cesar.school/vitaldatalab
+🔗 **App (MVP):** https://vital-data-lab-3tndzeibb8nbzu8fkukm3p.streamlit.app/  
+🔗 **Site do projeto:** https://sites.google.com/cesar.school/vitaldatalab  
+📁 **Drive (deck, vídeo da demo e Status Report do SR2):** https://drive.google.com/drive/folders/1BqB7lo7GNrqyoQ9MmwLjQfnhM68Hw4Z3  
+📊 **Resultados dos modelos:** [reports/RELATORIO_MODELOS.md](reports/RELATORIO_MODELOS.md)
+
+> ⚠️ **Base sintética.** Nenhum número deste repositório representa equipes, unidades ou resultados reais da Secretaria de Saúde do Recife.
 
 ---
 
 ## O que este projeto entrega
 
-Um painel na web que organiza a pontuação oficial do Recife Monitora, de **0 a 1.000**, para cada equipe de Saúde da Família do Recife, mostra em qual das três faixas de ação ela está — **Crítico (abaixo de 500), Atenção (500 a 749) ou Excelência (750 ou mais)** — e escreve, em uma linha, o que o gestor daquele território deve fazer primeiro.
+Para cada equipe de Saúde da Família, o app sugere **o que colocar no pacto do próximo ciclo**. São as ações com maior efeito esperado nos três eixos do Recife Monitora, cada uma com o motivo e com a evidência do histórico: quantas equipes parecidas fizeram aquela ação e quanto melhoraram em comparação com as que não fizeram.
 
-A comparação é justa: cada equipe é comparada apenas com equipes do mesmo grupo, como o próprio Recife Monitora determina, para que uma equipe em território vulnerável não seja penalizada por atender uma população mais difícil.
+A comparação é justa: cada equipe é comparada com equipes de território parecido, e o Eixo 3 só dentro do mesmo grupo, como o próprio Recife Monitora determina. Assim, uma equipe em território vulnerável não é penalizada por atender uma população mais difícil.
 
 **O painel existe para direcionar recursos, nunca para punir equipes.**
 
+### Duas camadas, declaradas
+
+| Camada | O que faz | Onde | Base |
+|---|---|---|---|
+| **App (MVP)** | Motor de sugestões: aprende com os pactos anteriores o efeito de cada ação em cada item, forma grupos de pares por território e sugere as ações | `prototipo/` | gerador sintético próprio (193 equipes, 8 ciclos) |
+| **Análise e régua** | Pipeline com as regras do programa, régua 0–1.000, faixas de ação 500/750 e avaliação de todos os modelos | `src/`, `notebooks/`, `reports/` | base comum do desafio (132 equipes, 11 ciclos) |
+
+Ligar o app à base comum e à régua 0–1.000 é a próxima etapa, declarada em [Pendências](#pendências-declaradas).
+
 ### O que não é
 
-- Não é um sistema de prontuário — não tocamos em dado de paciente.
-- Não é um ranking para cobrar equipe — é uma fila de prioridade para a gestão.
-- Não é um relatório em PDF — é uma aplicação que atualiza com a base.
-- Não é substituto do Recife Monitora — é uma camada de inteligência construída sobre os dados do programa.
+- Não é um sistema de prontuário: não tocamos em dado de paciente.
+- Não é um ranking para cobrar equipe: é uma fila de prioridade para a gestão.
+- Não é um relatório em PDF: é uma aplicação que atualiza com a base.
+- Não é substituto do Recife Monitora: é uma camada de inteligência construída sobre os dados do programa.
 
 ### O mecanismo
 
 ```text
-Bases do projeto
-      │
-      ▼
-Pipeline de dados
-Extract → Transform → Integrate → Load
-      │
-      ▼
-Base analítica
-      │
-      ▼
-TRIPÉ 0–1.000
-      ├──► Classificação
-      ├──► Agrupamento
-      └──► Recomendação
-                │
-                ▼
-              gestor
+Bases do desafio (5 CSVs)              Gerador sintético do protótipo
+          │                                        │
+          ▼                                        ▼
+Pipeline com as regras do programa      Histórico de eixos e de pactos
+          │                                        │
+          ▼                                        ▼
+Base analítica (1.363 × 43)             Motor de sugestões
+          │                             (Ridge + K-Means de território)
+          ▼                                        │
+Régua 0–1.000 · faixas 500/750                     ▼
+Avaliação dos modelos (reports/)        App: ações para o pacto ──► gestor
+          │                                        ▲
+          └────────── ligação: depois do SR2 ──────┘
 ```
 
 ---
@@ -263,7 +275,7 @@ Cada equipe recebe uma faixa de ação na régua oficial:
 
 Equipes desclassificadas aparecem como **Sem envio**, e não como nota zero. Equipes sem quórum no Bloco A aparecem como **Sem dado suficiente** nesse bloco.
 
-A camada de modelagem busca também fornecer explicabilidade sobre as variáveis relacionadas à classificação.
+Prever a faixa do **próximo** ciclo também foi testado, com Random Forest. O modelo não superou a regra simples "a equipe fica onde está" e por isso ficou fora do app: veja [Modelos e resultados](#modelos-e-resultados-sr2).
 
 ---
 
@@ -271,7 +283,7 @@ A camada de modelagem busca também fornecer explicabilidade sobre as variáveis
 
 O Eixo 3 é comparado apenas entre equipes do mesmo grupo, como o programa determina.
 
-Além disso, equipes com perfis semelhantes podem ser agrupadas para permitir comparações mais adequadas entre contextos próximos, evitando que toda equipe seja comparada simplesmente com a média geral.
+No app, um K-Means sobre IDHM, saneamento e renda forma **4 grupos de território**, e cada equipe é comparada com seus pares, não com a média da cidade (CP-FIT). O código genérico para avaliar esse agrupamento está em `src/modelos/clusterizacao.py`.
 
 ---
 
@@ -282,7 +294,7 @@ Além disso, equipes com perfis semelhantes podem ser agrupadas para permitir co
 | Quanto cada ação muda cada item? | Ridge, um modelo por item | erro 2,41 pp com as ações × 2,91 sem (−17%); reencontra os efeitos do gerador (correlação 0,996) | **sim** |
 | Com quem é justo comparar? | K-Means de território, k = 4 | silhueta 0,46; k = 4 é escolha de domínio (4 níveis de vulnerabilidade) | **sim** |
 | Em que faixa a equipe vai estar no próximo ciclo? | Random Forest | F1 macro 0,73 × 0,77 da regra "fica onde está" (teste 2026.1–2026.2) | não: não supera a regra simples |
-| Qual é o ponto fraco da equipe? | regra de estabilidade (3 de 3 ciclos) | na base comum o item mais baixo se repete em só 11% dos casos | regra pronta para a base comum |
+| Qual é o ponto fraco da equipe? | regra de estabilidade (3 de 3 ciclos) | na base comum o item mais baixo se repete em só 11% dos casos | **sim**: o ▼ só marca o que se repete em 3 de 3 ciclos |
 
 Números gerados por `python -m src.modelos.treinar_avaliar`. Detalhes e limites em `reports/RELATORIO_MODELOS.md`.
 
@@ -290,11 +302,15 @@ Números gerados por `python -m src.modelos.treinar_avaliar`. Detalhes e limites
 
 ## Recomendação
 
-O motor de recomendação transforma os resultados analíticos em ações priorizadas para a gestão.
+No app, o motor aprende com o histórico de pactos quanto cada ação muda cada item: uma regressão Ridge por item, que separa o efeito da ação da volta natural à média. Toda sugestão mostra o porquê, no formato: *"equipes com valor parecido que fizeram essa ação variaram X pp no ciclo seguinte (N casos); as que não fizeram variaram Y pp"*.
 
-As recomendações seguem regras determinísticas e auditáveis, permitindo identificar por que determinada ação foi sugerida.
+- **Auditável:** o motor não inventa nada. Cada número da tela vem do histórico e pode ser conferido.
+- **Ponto fraco só quando se repete:** `src/recomendacao/ponto_fraco.py` na análise e `fracos_persistentes` no app (PR #6). Na base comum, o item mais baixo de uma equipe muda de um ciclo para o outro em 89% dos casos.
+- **Pergunte ao agente (opcional, PR #6):** uma aba liga o app ao agente de referência da disciplina, que responde sobre a base comum. Sem o serviço rodando, a aba só explica como ligar.
+- **Texto opcional por IA local:** um modelo rodando na própria máquina (Ollama, `qwen2.5:7b`) reescreve a justificativa, e o texto é descartado se citar um número que não está nos dados. Veja `prototipo/README.md`.
+- **Validação de domínio:** o catálogo de ações e seus responsáveis passa por Danilo Brito antes de uso real.
 
-As regras e parâmetros utilizados nessa camada devem passar por validação de domínio antes de serem considerados definitivos.
+O motor por regras fixas em `src/recomendacao/motor.py` é da v1 e fica como histórico.
 
 ---
 
